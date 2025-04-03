@@ -1,0 +1,210 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: media-stack
+  labels:
+    app: media-stack
+
+spec:
+  containers:
+    # qBittorrent container
+    - name: qbittorrent
+      image: lscr.io/linuxserver/qbittorrent:latest
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+      ports:
+        - name: torrent-tcp
+          containerPort: 6881
+          hostPort: 6881
+          protocol: TCP
+        - name: torrent-udp
+          containerPort: 6881
+          hostPort: 6881
+          protocol: UDP
+        - name: webui
+          containerPort: 8080
+          hostPort: 8080
+          protocol: TCP
+      volumeMounts:
+        - name: data-torrents
+          mountPath: /data/torrents
+        - name: qbittorrent-config
+          mountPath: /config
+
+    # Radarr container
+    - name: radarr
+      image: lscr.io/linuxserver/radarr:latest
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+      ports:
+        - containerPort: 7878
+          hostPort: 7878
+      volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: radarr-config
+          mountPath: /config
+
+    # Sonarr container
+    - name: sonarr
+      image: lscr.io/linuxserver/sonarr:latest
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+      ports:
+        - containerPort: 8989
+          hostPort: 8989
+      volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: sonarr-config
+          mountPath: /config
+
+    # Prowlarr container
+    - name: prowlarr
+      image: lscr.io/linuxserver/prowlarr:latest
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+      ports:
+        - containerPort: 9696
+          hostPort: 9696
+      volumeMounts:
+        - name: prowlarr-config
+          mountPath: /config
+
+    # Jellyseerr container
+    - name: jellyseerr
+      image: fallenbagel/jellyseerr:latest
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: PGID
+          value: "1000"
+        - name: PUID
+          value: "1000"
+        - name: LOG_LEVEL
+          value: "debug"
+      ports:
+        - containerPort: 5055
+          hostPort: 5055
+      volumeMounts:
+        - name: jellyseerr-config
+          mountPath: /app/config
+
+    # Flaresolverr container
+    - name: flaresolverr
+      image: ghcr.io/flaresolverr/flaresolverr:latest
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: LOG_HTML
+          value: "false"
+        - name: CAPTCHA_SOLVER
+          value: "none"
+      ports:
+        - containerPort: 8191
+          hostPort: 8191
+          protocol: TCP
+      imagePullPolicy: Always
+      restartPolicy: Always
+    
+    # Recyclarr container
+    - name: recyclarr
+      image: ghcr.io/recyclarr/recyclarr
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      env:
+        - name: TZ
+          value: "Australia/Melbourne"
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: RECYCLARR_CREATE_CONFIG
+          value: "True"
+        - name: CRON_SCHEDULE
+          value: "@daily"
+      volumeMounts:
+        - name: recyclarr-config
+          mountPath: /config
+        - name: tmp-volume
+          mountPath: /tmp
+
+
+
+# If running Podman in Windows, paths must be in the form of /mnt/c/users/username for C:\Users\username
+# Below directories I believe need to be created in advance, podman wont do it for you
+  volumes:
+
+    # entire data directory
+    - name: data
+      hostPath:
+        path: /mnt/m/data
+        type: Directory
+
+    # data/torrents directory
+    - name: data-torrents
+      hostPath:
+        path: /mnt/m/data/torrents
+        type: Directory
+
+    # qBittorrent configuration volume
+    - name: qbittorrent-config
+      hostPath:
+        path: /mnt/c/Users/username/podman/compose/media-stack/config/qbittorrent
+        type: Directory
+
+    # Radarr configuration volume
+    - name: radarr-config
+      hostPath:
+        path: /mnt/c/Users/username/podman/compose/media-stack/config/radarr
+        type: Directory
+
+    # Sonarr configuration volume
+    - name: sonarr-config
+      hostPath:
+        path: /mnt/c/Users/username/podman/compose/media-stack/config/sonarr
+        type: Directory
+
+    # Prowlarr configuration volume
+    - name: prowlarr-config
+      hostPath:
+        path: /mnt/c/Users/username/podman/compose/media-stack/config/prowlarr
+        type: Directory
+
+    # Jellyseerr configuration volume
+    - name: jellyseerr-config
+      hostPath:
+        path: /mnt/c/Users/username/podman/compose/media-stack/config/jellyseerr
+        type: Directory
+
+    # Recyclarr configuration volume
+    - name: recyclarr-config
+      hostPath:
+        path: /mnt/c/Users/username/podman/compose/media-stack/config/recyclarr
+        type: Directory
+    - name: tmp-volume
+      emptyDir:
+        medium: Memory
