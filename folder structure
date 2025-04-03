@@ -1,0 +1,10 @@
+.
+└── media-stack
+    ├── pod.yaml
+    └── config
+        ├── jellyseerr
+        ├── prowlarr
+        ├── qBittorrent
+        ├── radarr
+        ├── recyclarr
+        └── sonarr
